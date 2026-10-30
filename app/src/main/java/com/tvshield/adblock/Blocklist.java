@@ -229,7 +229,12 @@ final class Blocklist {
     }
 
     private static InputStream asset(Context ctx, String name) throws IOException {
-        return new GZIPInputStream(ctx.getAssets().open("lists/" + name + ".txt.gz"), 65536);
+        // Збірка Android розпаковує *.gz в assets, тому спершу шукаємо звичайний .txt
+        try {
+            return ctx.getAssets().open("lists/" + name + ".txt");
+        } catch (IOException e) {
+            return new GZIPInputStream(ctx.getAssets().open("lists/" + name + ".txt.gz"), 65536);
+        }
     }
 
     /** Розбирає hosts / список доменів / правила Adblock (||domain^, @@||domain^). */
