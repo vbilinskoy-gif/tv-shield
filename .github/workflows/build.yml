@@ -1,0 +1,54 @@
+name: Build APK
+
+on:
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Refresh bundled blocklists
+        continue-on-error: true
+        run: |
+          set -e
+          cd app/src/main/assets/lists
+          get() { curl -fsSL --retry 3 "$2" -o "/tmp/$1.txt" && [ "$(wc -l < /tmp/$1.txt)" -gt 100 ] && gzip -9c "/tmp/$1.txt" > "$1.txt.gz" && echo "updated $1"; }
+          H=https://raw.githubusercontent.com/hagezi/dns-blocklists/main/wildcard
+          get light   $H/light-onlydomains.txt
+          get multi   $H/multi-onlydomains.txt
+          get pro     $H/pro-onlydomains.txt
+          get adguard https://raw.githubusercontent.com/AdguardTeam/AdGuardSDNSFilter/gh-pages/Filters/filter.txt
+          get smarttv https://raw.githubusercontent.com/Perflyst/PiHoleBlocklist/master/SmartTV.txt
+
+      - name: Build
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleRelease --no-daemon --stacktrace
+          cp app/build/outputs/apk/release/app-release.apk TVShield.apk
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: TVShield
+          path: TVShield.apk
+
+      - name: Publish as "latest" release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release delete latest -y --cleanup-tag || true
+          gh release create latest TVShield.apk \
+            --target "${{ github.sha }}" \
+            --title "TV Щит — остання збірка" \
+            --notes "Завантажити на ТВ: додаток Downloader → https://github.com/${{ github.repository }}/releases/download/latest/TVShield.apk"

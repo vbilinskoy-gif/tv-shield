@@ -1,0 +1,43 @@
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    namespace 'com.tvshield.adblock'
+    compileSdk 34
+
+    defaultConfig {
+        applicationId 'com.tvshield.adblock'
+        minSdk 21          // Android TV 5.0+
+        targetSdk 34
+        versionCode 1
+        versionName '1.0'
+    }
+
+    signingConfigs {
+        release {
+            // Постійний ключ: оновлення ставляться поверх старої версії без видалення.
+            storeFile file('tvshield.jks')
+            storePassword 'tvshield'
+            keyAlias 'tvshield'
+            keyPassword 'tvshield'
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            signingConfig signingConfigs.release
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    lint {
+        abortOnError false
+        checkReleaseBuilds false
+    }
+}
